@@ -1,0 +1,61 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure MoveMove",
+        "description": "The integration can often bootstrap itself now. If login fails, add an initial CSRF token once and retry.",
+        "data": {
+          "username": "Username",
+          "password": "Password",
+          "csrf_token": "Initial CSRF token (optional)",
+          "max_records": "Max records",
+          "scan_interval": "Scan interval (minutes)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to MoveMove",
+      "invalid_auth": "Invalid authentication or bootstrap token",
+      "unknown": "Unexpected error"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "MoveMove options",
+        "data": {
+          "max_records": "Max records",
+          "scan_interval": "Scan interval (minutes)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "latest_transaction_amount": {
+        "name": "Latest transaction amount"
+      },
+      "latest_transaction_liters": {
+        "name": "Latest transaction liters"
+      },
+      "total_amount": {
+        "name": "Total amount"
+      },
+      "fuel_amount": {
+        "name": "Fuel amount"
+      },
+      "fuel_liters": {
+        "name": "Fuel liters"
+      },
+      "average_liters_per_100km": {
+        "name": "Average liters per 100km"
+      },
+      "transaction_count": {
+        "name": "Transaction count"
+      },
+      "fuel_transaction_count": {
+        "name": "Fuel transaction count"
+      }
+    }
+  }
+}
