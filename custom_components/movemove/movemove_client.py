@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import logging
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, build_opener, HTTPCookieProcessor
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class MoveMoveError(Exception):
@@ -52,8 +55,10 @@ class MoveMoveClient:
         last_error: Exception | None = None
         for path in self._LOGIN_PATHS:
             try:
+                _LOGGER.debug("Trying MoveMove login endpoint: %s", path)
                 response = self._request_json("POST", path, payload)
             except MoveMoveError as err:
+                _LOGGER.debug("Login endpoint %s failed: %s", path, err)
                 last_error = err
                 continue
 
@@ -74,8 +79,10 @@ class MoveMoveClient:
         last_error: Exception | None = None
         for path in self._MONTH_PATHS:
             try:
+                _LOGGER.debug("Trying MoveMove month overview endpoint: %s", path)
                 response = self._request_json("GET", path, params)
             except MoveMoveError as err:
+                _LOGGER.debug("Month endpoint %s failed: %s", path, err)
                 last_error = err
                 continue
 
