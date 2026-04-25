@@ -14,7 +14,7 @@
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to MoveMove",
+      "cannot_connect": "Failed to connect to MoveMove (check Home Assistant logs for details)",
       "invalid_auth": "Invalid authentication or bootstrap token",
       "unknown": "Unexpected error"
     }
