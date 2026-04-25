@@ -113,7 +113,7 @@ class MoveMoveClient:
         self.timeout = timeout
         self.session = session or requests.Session()
         self._last_csrf_token: str | None = credentials.csrf_token
-        self.versions = self._discover_versions()
+        self.versions: ApiVersions | None = None
 
     def _request(self, method: str, url: str, *, raise_for_status: bool = True, **kwargs: Any) -> requests.Response:
         try:
@@ -193,7 +193,20 @@ class MoveMoveClient:
             ),
         )
 
-    def _csrf_token(self) -> str:
+    def _ensure_versions(self) -> ApiVersions:
+        if self.versions is None:
+            self.versions = self._discover_versions()
+        return self.versions
+
+    def _prime_login_page(self) -> None:
+        response = self._request("GET", LOGIN_PAGE_URL, raise_for_status=False)
+        self._raise_for_status(response, "GET", LOGIN_PAGE_URL)
+        try:
+            self._refresh_csrf_from_cookies(log_missing=False)
+        except MoveMoveError:
+            _LOGGER.debug("MoveMove login page loaded but no CSRF cookie was found yet")
+
+    def _csrf_token(self, *, log_missing: bool = True) -> str:
         nr2 = self.session.cookies.get("nr2Users")
         if nr2 and "crf%3d" in nr2:
             part = nr2.split("crf%3d", 1)[1].split("%3b", 1)[0]
@@ -202,7 +215,8 @@ class MoveMoveClient:
             return token
         if self._last_csrf_token:
             return self._last_csrf_token
-        _LOGGER.error("MoveMove CSRF token missing from session cookies")
+        if log_missing:
+            _LOGGER.error("MoveMove CSRF token missing from session cookies")
         raise MoveMoveError("No CSRF token found in session cookies")
 
     def _base_headers(self, referer: str) -> dict[str, str]:
@@ -217,8 +231,8 @@ class MoveMoveClient:
             headers["x-csrftoken"] = token
         return headers
 
-    def _refresh_csrf_from_cookies(self) -> None:
-        self._last_csrf_token = self._csrf_token()
+    def _refresh_csrf_from_cookies(self, *, log_missing: bool = True) -> None:
+        self._last_csrf_token = self._csrf_token(log_missing=log_missing)
 
     def _post_json(self, url: str, payload: dict[str, Any], referer: str) -> dict[str, Any]:
         response = self._request(
@@ -246,10 +260,14 @@ class MoveMoveClient:
         return data
 
     def login(self) -> dict[str, Any]:
+        versions = self._ensure_versions()
+        if not self._last_csrf_token:
+            self._prime_login_page()
+
         payload = {
             "versionInfo": {
-                "moduleVersion": self.versions.module_version,
-                "apiVersion": self.versions.login_api_version,
+                "moduleVersion": versions.module_version,
+                "apiVersion": versions.login_api_version,
             },
             "viewName": "Common.Login",
             "inputParameters": {
@@ -272,7 +290,7 @@ class MoveMoveClient:
         )
 
         if response.status_code == 403:
-            _LOGGER.warning("MoveMove login returned 403, refreshing CSRF token and retrying")
+            _LOGGER.info("MoveMove login returned 403, refreshing CSRF token and retrying")
             self._refresh_csrf_from_cookies()
             response = self._request(
                 "POST",
@@ -293,10 +311,11 @@ class MoveMoveClient:
         return data["data"]
 
     def register_device_login(self, is_movemove: bool = False) -> None:
+        versions = self._ensure_versions()
         payload = {
             "versionInfo": {
-                "moduleVersion": self.versions.module_version,
-                "apiVersion": self.versions.device_login_api_version,
+                "moduleVersion": versions.module_version,
+                "apiVersion": versions.device_login_api_version,
             },
             "viewName": "Common.Login",
             "inputParameters": {
@@ -307,11 +326,12 @@ class MoveMoveClient:
         self._post_json(DEVICE_LOGIN_ACTION_URL, payload, LOGIN_PAGE_URL)
 
     def fetch_transactions(self, year: int, month: int, max_records: int = DEFAULT_MAX_RECORDS) -> list[dict[str, Any]]:
+        versions = self._ensure_versions()
         window = month_window(year, month)
         payload = {
             "versionInfo": {
-                "moduleVersion": self.versions.module_version,
-                "apiVersion": self.versions.transactions_api_version,
+                "moduleVersion": versions.module_version,
+                "apiVersion": versions.transactions_api_version,
             },
             "viewName": "MainFlow.Transactions",
             "screenData": {
@@ -348,10 +368,11 @@ class MoveMoveClient:
         return result.get("data", {}).get("Transactions", {}).get("List", [])
 
     def fetch_totals(self, year: int, month: int, transaction_type: str = "All") -> dict[str, Any]:
+        versions = self._ensure_versions()
         payload = {
             "versionInfo": {
-                "moduleVersion": self.versions.module_version,
-                "apiVersion": self.versions.totals_api_version,
+                "moduleVersion": versions.module_version,
+                "apiVersion": versions.totals_api_version,
             },
             "viewName": "MainFlow.Transactions",
             "screenData": {
