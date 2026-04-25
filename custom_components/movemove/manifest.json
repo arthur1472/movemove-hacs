@@ -1,13 +1,17 @@
 {
   "domain": "movemove",
   "name": "MoveMove",
-  "codeowners": ["@asjouw"],
+  "codeowners": [
+    "@asjouw"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/asjouw/movemove-hacs",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/asjouw/movemove-hacs/issues",
   "requirements": [],
-  "version": "0.1.1",
-  "loggers": ["custom_components.movemove"]
+  "version": "0.1.2",
+  "loggers": [
+    "custom_components.movemove"
+  ]
 }
