@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+- fixed Home Assistant config flow loading by bundling the MoveMove API client inside the integration package
+- added explicit `requests` dependency in the integration manifest
+
 ## 0.1.1
 - improved CSRF bootstrap so manual seeding is often no longer required
 - added device registration step to the stable auth flow
