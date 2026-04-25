@@ -1,5 +1,7 @@
 {
   "name": "MoveMove",
-  "content_in_root": false,
-  "render_readme": true
+  "country": "NL",
+  "homeassistant": ">=2024.4.0",
+  "render_readme": true,
+  "domains": ["movemove"]
 }

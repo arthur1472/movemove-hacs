@@ -1,53 +1,73 @@
-# MoveMove Home Assistant Integration
+# MoveMove Home Assistant integration
 
-Custom Home Assistant integration for MoveMove fuel card data.
+HACS-ready Home Assistant custom integration for MoveMove / OnTheMove.
 
-## What this integration provides
+## Features
 
-- Config flow setup from Home Assistant UI.
-- Periodic polling of your current month MoveMove summary and transactions.
-- Sensors for totals, fuel amounts, liters, averages, and latest transaction details.
+- monthly summary sensors
+- latest transaction sensors
+- automatic OutSystems JSON API polling
+- diagnostics support with redaction
+- manual `movemove.refresh` service
+- config flow + options flow
 
-## Installation (HACS custom repository)
+## Sensors
 
-1. In HACS, add this repository as a **Custom repository** with category **Integration**.
-2. Install **MoveMove** from HACS.
-3. Restart Home Assistant.
-4. Go to **Settings → Devices & Services → Add Integration → MoveMove**.
+- latest transaction amount
+- latest transaction liters
+- total amount
+- fuel amount
+- fuel liters
+- average liters per 100 km
+- transaction count
+- fuel transaction count
 
-## Notes
+The transaction-count sensor exposes the full current-period transaction list as attributes.
+Latest-transaction sensors expose extra context like date, type, location, and product.
 
-- Version is managed in `custom_components/movemove/manifest.json`.
-- If login fails, provide your optional CSRF token during setup.
+## Setup
 
-## HACS version + description behavior
+1. Put this repository on GitHub.
+2. Add it to HACS as a custom repository, or publish it publicly for normal HACS installation.
+3. Install the integration.
+4. Restart Home Assistant.
+5. Add the MoveMove integration from the Home Assistant UI.
+6. Enter:
+   - username
+   - password
+   - optional initial CSRF token
+   - max records
+   - scan interval
 
-HACS does **not** read the integration version from `manifest.json` for the repository card/update entity.  
-For HACS to show a semantic version (for example `v0.1.3`) instead of a commit SHA, publish a **GitHub Release** for each version.
+## Bootstrap / CSRF
 
-- `manifest.json` version is used by Home Assistant.
-- HACS repository/update version is based on GitHub releases.
-- If no release exists, HACS falls back to a commit hash.
+The integration now tries to self-bootstrap the CSRF flow automatically.
+In many cases you can leave the CSRF field empty.
+If first-time login still fails, provide an initial CSRF token once and retry.
 
-Repository description in HACS comes from the **GitHub repository description** (set in the repo “About” section), not from `hacs.json`.
+## Manual refresh
 
-## Troubleshooting and logs
+Service name:
+- `movemove.refresh`
 
-If configuration fails with `Failed to connect to MoveMove`, detailed errors are logged under:
+## Repository structure
 
-- `custom_components.movemove.config_flow` (during setup validation)
-- `custom_components.movemove.coordinator` (during periodic refresh)
-- `custom_components.movemove.movemove_client` (debug endpoint attempts)
+- `custom_components/movemove/` — Home Assistant integration
+- `scripts/movemove_api_client.py` — underlying Python API client
+- `scripts/test_movemove_api_client.py` — repeated-run verifier
+- `CHANGELOG.md` — release notes
 
-### Where to see logs in Home Assistant
+## Current publication status
 
-1. Go to **Settings → System → Logs**.
-2. Filter for `movemove` or `custom_components.movemove`.
-3. To get endpoint-level debug details, add this to `configuration.yaml` and restart Home Assistant:
+This repo is close to HACS/GitHub publication-ready, but you should still do one real-world validation in a Home Assistant instance before publishing a release.
 
-```yaml
-logger:
-  default: info
-  logs:
-    custom_components.movemove: debug
-```
+Recommended final checks:
+- install in a real HA test environment
+- run through config flow
+- verify sensor creation
+- verify `movemove.refresh`
+- verify diagnostics output
+
+## License
+
+MIT

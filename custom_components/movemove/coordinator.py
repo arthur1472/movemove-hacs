@@ -42,10 +42,8 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         try:
             return await self.hass.async_add_executor_job(self._fetch_data)
         except MoveMoveError as err:
-            _LOGGER.error("MoveMove update failed: %s", err)
             raise UpdateFailed(str(err)) from err
         except Exception as err:
-            _LOGGER.exception("Unexpected MoveMove update error")
             raise UpdateFailed(f"Unexpected MoveMove error: {err}") from err
 
     def _fetch_data(self) -> dict:

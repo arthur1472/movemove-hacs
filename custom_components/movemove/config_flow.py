@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-import logging
 
 import voluptuous as vol
 
@@ -22,8 +21,6 @@ from .const import (
 )
 from .movemove_client import MoveMoveClient, MoveMoveCredentials, MoveMoveError
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class MoveMoveConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -35,20 +32,11 @@ class MoveMoveConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 await self.hass.async_add_executor_job(self._validate_input, user_input)
             except MoveMoveError as err:
-                _LOGGER.warning(
-                    "MoveMove config validation failed for user '%s': %s",
-                    user_input.get(CONF_USERNAME, "<unknown>"),
-                    err,
-                )
                 if "Invalid Login" in str(err):
                     errors["base"] = "invalid_auth"
                 else:
                     errors["base"] = "cannot_connect"
             except Exception:
-                _LOGGER.exception(
-                    "Unexpected error validating MoveMove configuration for user '%s'",
-                    user_input.get(CONF_USERNAME, "<unknown>"),
-                )
                 errors["base"] = "unknown"
             else:
                 await self.async_set_unique_id(user_input[CONF_USERNAME])

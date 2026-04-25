@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node
+node_modules/
+
+# Local state / generated data
+.openclaw/
+state/
+data/
+reports/
+screenshots/
+*.json
+*.txt
+*.pdf
+*.png
+*.html
+
+# Workspace/private files not for publication
+AGENTS.md
+SOUL.md
+USER.md
+TOOLS.md
+MEMORY.md
+HEARTBEAT.md
+IDENTITY.md
+memory/
+worker-agents/
+DREAMS.md
+mail-setup.md
+ah_*
+.stedin*
+stedin_*
+madeira-planning-email.txt
+.clawhub/
+dist/
+
+# Keep repo files that should stay tracked
+!custom_components/
+!custom_components/**
+!hacs.json
+!README.md
+!scripts/movemove_api_client.py
+!scripts/test_movemove_api_client.py
+!scripts/README-movemove.md
