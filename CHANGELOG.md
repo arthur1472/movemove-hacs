@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.6
+- fixed a 403 re-auth regression where CSRF state could be lost during retry, causing repeated authentication failures
+
 ## 0.1.5
 - added adaptive refresh backoff with light jitter after repeated MoveMove failures to reduce hammering a degraded upstream
 - added a diagnostic sensor for the age of the last fresh successful update

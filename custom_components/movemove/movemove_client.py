@@ -234,9 +234,10 @@ class MoveMoveClient:
     def _refresh_csrf_from_cookies(self, *, log_missing: bool = True) -> None:
         self._last_csrf_token = self._csrf_token(log_missing=log_missing)
 
-    def _reset_auth_state(self, *, rediscover_versions: bool = False) -> None:
+    def _reset_auth_state(self, *, rediscover_versions: bool = False, preserve_token: bool = True) -> None:
+        previous_token = self._last_csrf_token
         self.session.cookies.clear()
-        self._last_csrf_token = self.credentials.csrf_token
+        self._last_csrf_token = previous_token if preserve_token and previous_token else self.credentials.csrf_token
         if rediscover_versions:
             self.versions = None
 
@@ -300,11 +301,12 @@ class MoveMoveClient:
             _LOGGER.info("MoveMove login returned 403, refreshing CSRF token and retrying")
             self._reset_auth_state(rediscover_versions=True)
             self._prime_login_page()
+            retry_headers = self._base_headers(LOGIN_PAGE_URL)
             response = self._request(
                 "POST",
                 LOGIN_ACTION_URL,
                 raise_for_status=False,
-                headers={**self._base_headers(LOGIN_PAGE_URL), "x-csrftoken": self._csrf_token()},
+                headers=retry_headers,
                 json=payload,
             )
 
