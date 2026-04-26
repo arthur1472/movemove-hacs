@@ -20,16 +20,18 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = MoveMoveDataUpdateCoordinator(
         hass,
+        entry_id=entry.entry_id,
         username=entry.data["username"],
         password=entry.data["password"],
         csrf_token=entry.data.get(CONF_CSRF_TOKEN),
         max_records=entry.options.get(CONF_MAX_RECORDS, entry.data.get(CONF_MAX_RECORDS, 100)),
         scan_interval_minutes=entry.options.get(CONF_SCAN_INTERVAL, entry.data.get(CONF_SCAN_INTERVAL, 360)),
     )
+    await coordinator.async_initialize()
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await coordinator.async_config_entry_first_refresh()
 
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
-    await hass.config_entries.async_forward_entry_setups(entry, [Platform.SENSOR])
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 

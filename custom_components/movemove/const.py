@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 DOMAIN = "movemove"
-PLATFORMS = ["sensor"]
+PLATFORMS = ["sensor", "button"]
 
 CONF_USERNAME = "username"
 CONF_PASSWORD = "password"
@@ -17,3 +17,4 @@ ATTR_TRANSACTIONS = "transactions"
 ATTR_SUMMARY = "summary"
 ATTR_CURRENT_PERIOD = "current_period"
 ATTR_LATEST_TRANSACTION = "latest_transaction"
+ATTR_DIAGNOSTICS = "diagnostics"

@@ -31,7 +31,24 @@
     }
   },
   "entity": {
+    "button": {
+      "refresh_data": {
+        "name": "Refresh data"
+      }
+    },
     "sensor": {
+      "last_fuel_distance_since_previous": {
+        "name": "Kilometers since last refuel"
+      },
+      "last_fuel_location": {
+        "name": "Last refuel location"
+      },
+      "last_fuel_liters_per_100km": {
+        "name": "Last refuel liters per 100km"
+      },
+      "last_fresh_update_age_minutes": {
+        "name": "Last fresh update age"
+      },
       "latest_transaction_amount": {
         "name": "Latest transaction amount"
       },

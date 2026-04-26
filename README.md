@@ -6,24 +6,33 @@ HACS-ready Home Assistant custom integration for MoveMove / OnTheMove.
 
 - monthly summary sensors
 - latest transaction sensors
+- latest refuel insight sensors
 - automatic OutSystems JSON API polling
+- stale-data fallback with persistent cache when MoveMove is slow or offline
 - diagnostics support with redaction
 - manual `movemove.refresh` service
+- diagnostic "Refresh data" button on the device
+- adaptive retry backoff with light jitter during repeated failures
 - config flow + options flow
 
 ## Sensors
 
 - latest transaction amount
 - latest transaction liters
+- kilometers since last refuel
+- last refuel location
+- last refuel liters per 100 km
 - total amount
 - fuel amount
 - fuel liters
 - average liters per 100 km
 - transaction count
 - fuel transaction count
+- last fresh update age
 
 The transaction-count sensor exposes the full current-period transaction list as attributes.
 Latest-transaction sensors expose extra context like date, type, location, and product.
+All sensors expose diagnostics attributes that show whether cached data is currently being served.
 
 ## Setup
 
@@ -49,6 +58,9 @@ If first-time login still fails, provide an initial CSRF token once and retry.
 
 Service name:
 - `movemove.refresh`
+
+There is also a diagnostic button entity on the MoveMove device:
+- `Refresh data`
 
 ## Repository structure
 

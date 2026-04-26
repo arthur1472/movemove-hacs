@@ -5,13 +5,13 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CURRENCY_EURO, UnitOfVolume
+from homeassistant.const import CURRENCY_EURO, EntityCategory, UnitOfVolume
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ATTR_CURRENT_PERIOD, ATTR_LATEST_TRANSACTION, ATTR_SUMMARY, ATTR_TRANSACTIONS, DOMAIN
+from .const import ATTR_CURRENT_PERIOD, ATTR_DIAGNOSTICS, ATTR_LATEST_TRANSACTION, ATTR_SUMMARY, ATTR_TRANSACTIONS, DOMAIN
 from .coordinator import MoveMoveDataUpdateCoordinator
 
 
@@ -21,6 +21,38 @@ class MoveMoveSensorDescription(SensorEntityDescription):
 
 
 SENSORS: tuple[MoveMoveSensorDescription, ...] = (
+    MoveMoveSensorDescription(
+        key="last_fuel_distance_since_previous",
+        translation_key="last_fuel_distance_since_previous",
+        name="MoveMove kilometers since last refuel",
+        native_unit_of_measurement="km",
+        value_key="last_fuel_distance_since_previous",
+        icon="mdi:map-marker-distance",
+    ),
+    MoveMoveSensorDescription(
+        key="last_fuel_location",
+        translation_key="last_fuel_location",
+        name="MoveMove last refuel location",
+        value_key="last_fuel_location",
+        icon="mdi:map-marker",
+    ),
+    MoveMoveSensorDescription(
+        key="last_fuel_liters_per_100km",
+        translation_key="last_fuel_liters_per_100km",
+        name="MoveMove last refuel liters per 100km",
+        native_unit_of_measurement="L/100km",
+        value_key="last_fuel_liters_per_100km",
+        icon="mdi:car-speed-limiter",
+    ),
+    MoveMoveSensorDescription(
+        key="last_fresh_update_age_minutes",
+        translation_key="last_fresh_update_age_minutes",
+        name="MoveMove last fresh update age",
+        native_unit_of_measurement="min",
+        value_key="last_fresh_update_age_minutes",
+        icon="mdi:timer-outline",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
     MoveMoveSensorDescription(
         key="latest_transaction_amount",
         translation_key="latest_transaction_amount",
@@ -118,12 +150,21 @@ class MoveMoveSensor(CoordinatorEntity[MoveMoveDataUpdateCoordinator], SensorEnt
 
     @property
     def native_value(self) -> Any:
+        latest_fuel = self.coordinator.data.get("latestFuelTransaction") or {}
         if self.entity_description.value_key == "latest_transaction_amount":
             latest = self.coordinator.data.get("latestTransaction") or {}
             return latest.get("amountEur")
         if self.entity_description.value_key == "latest_transaction_liters":
             latest = self.coordinator.data.get("latestTransaction") or {}
             return latest.get("liters")
+        if self.entity_description.value_key == "last_fuel_distance_since_previous":
+            return latest_fuel.get("distanceSincePreviousFuelKm")
+        if self.entity_description.value_key == "last_fuel_location":
+            return latest_fuel.get("location")
+        if self.entity_description.value_key == "last_fuel_liters_per_100km":
+            return latest_fuel.get("litersPer100Km")
+        if self.entity_description.value_key == "last_fresh_update_age_minutes":
+            return self.coordinator.data.get("diagnostics", {}).get("lastSuccessfulUpdateAgeMinutes")
         return self.coordinator.data.get("summary", {}).get(self.entity_description.value_key)
 
     @property
@@ -132,6 +173,8 @@ class MoveMoveSensor(CoordinatorEntity[MoveMoveDataUpdateCoordinator], SensorEnt
             ATTR_SUMMARY: self.coordinator.data.get("summary", {}),
             ATTR_CURRENT_PERIOD: self.coordinator.data.get("currentPeriod", {}),
             ATTR_LATEST_TRANSACTION: self.coordinator.data.get("latestTransaction"),
+            "latest_fuel_transaction": self.coordinator.data.get("latestFuelTransaction"),
+            ATTR_DIAGNOSTICS: self.coordinator.data.get("diagnostics", {}),
         }
         latest = self.coordinator.data.get("latestTransaction") or {}
         if self.entity_description.key in {"latest_transaction_amount", "latest_transaction_liters"}:

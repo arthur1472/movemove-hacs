@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.5
+- added adaptive refresh backoff with light jitter after repeated MoveMove failures to reduce hammering a degraded upstream
+- added a diagnostic sensor for the age of the last fresh successful update
+- added sensors for kilometers since last refuel, last refuel location, and last refuel liters per 100 km
+
+## 0.1.4
+- kept the last successful sensor payload available when MoveMove returns timeouts, 403s, or other transient API errors
+- added persistent cache restore during startup so the integration can recover with stale data after reloads/restarts
+- added a diagnostic "Refresh data" button entity on the MoveMove device
+- exposed refresh/cache diagnostics in sensor attributes
+
 ## 0.1.3
 - fixed blocking network I/O during Home Assistant setup by deferring API version discovery until executor-backed calls
 - primed the login page before authentication to reduce expected CSRF bootstrap warnings
