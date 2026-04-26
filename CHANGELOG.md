@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.9
+- simplified the auth flow by removing unused reset-state logic after restoring the proven CSRF retry path
+
+## 0.1.8
+- restored the proven CSRF retry login flow from the standalone API client to fix false 403 "Invalid Login" errors in the integration
+
 ## 0.1.7
 - fixed login retry to rebuild versioned login payloads after auth resets, preventing false 403 "Invalid Login" failures
 

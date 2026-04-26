@@ -262,21 +262,13 @@ class MoveMoveClient:
         }
 
     def _login_request(self) -> requests.Response:
-        headers = self._base_headers(LOGIN_PAGE_URL)
         return self._request(
             "POST",
             LOGIN_ACTION_URL,
             raise_for_status=False,
-            headers=headers,
+            headers=self._base_headers(LOGIN_PAGE_URL),
             json=self._build_login_payload(),
         )
-
-    def _reset_auth_state(self, *, rediscover_versions: bool = False, preserve_token: bool = True) -> None:
-        previous_token = self._last_csrf_token
-        self.session.cookies.clear()
-        self._last_csrf_token = previous_token if preserve_token and previous_token else self.credentials.csrf_token
-        if rediscover_versions:
-            self.versions = None
 
     def _post_json(self, url: str, payload: dict[str, Any], referer: str) -> dict[str, Any]:
         response = self._request(
@@ -289,7 +281,6 @@ class MoveMoveClient:
 
         if response.status_code == 403 and url != LOGIN_ACTION_URL:
             _LOGGER.warning("MoveMove returned 403 for %s, re-authenticating and retrying", url)
-            self._reset_auth_state(rediscover_versions=True)
             self.login()
             response = self._request(
                 "POST",
@@ -313,8 +304,7 @@ class MoveMoveClient:
 
         if response.status_code == 403:
             _LOGGER.info("MoveMove login returned 403, refreshing CSRF token and retrying")
-            self._reset_auth_state(rediscover_versions=True, preserve_token=False)
-            self._prime_login_page()
+            self._refresh_csrf_from_cookies()
             response = self._login_request()
 
         self._raise_for_status(response, "POST", LOGIN_ACTION_URL)
