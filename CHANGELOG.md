@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.10
+- fixed Home Assistant thread-safety violations by persisting cache from the event loop instead of an executor thread
+- hardened expired-session recovery by renewing the HTTP session before re-authenticating after a 403 on data requests
+
 ## 0.1.9
 - simplified the auth flow by removing unused reset-state logic after restoring the proven CSRF retry path
 

@@ -246,6 +246,11 @@ class MoveMoveClient:
     def _refresh_csrf_from_cookies(self, *, log_missing: bool = True) -> None:
         self._last_csrf_token = self._csrf_token(log_missing=log_missing)
 
+    def _renew_session(self) -> None:
+        self.session.close()
+        self.session = requests.Session()
+        self._last_csrf_token = self.credentials.csrf_token
+
     def _build_login_payload(self) -> dict[str, Any]:
         versions = self._ensure_versions()
         return {
@@ -280,7 +285,8 @@ class MoveMoveClient:
         )
 
         if response.status_code == 403 and url != LOGIN_ACTION_URL:
-            _LOGGER.warning("MoveMove returned 403 for %s, re-authenticating and retrying", url)
+            _LOGGER.debug("MoveMove returned 403 for %s, renewing session and retrying", url)
+            self._renew_session()
             self.login()
             response = self._request(
                 "POST",

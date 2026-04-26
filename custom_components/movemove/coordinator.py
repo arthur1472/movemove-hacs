@@ -123,13 +123,16 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
 
     async def _async_update_data(self) -> dict:
         try:
-            return await self.hass.async_add_executor_job(self._fetch_data)
+            data, cache_to_persist = await self.hass.async_add_executor_job(self._fetch_data)
+            if cache_to_persist is not None:
+                await self._persist_cache(cache_to_persist)
+            return data
         except MoveMoveError as err:
             raise UpdateFailed(str(err)) from err
         except Exception as err:
             raise UpdateFailed(f"Unexpected MoveMove error: {err}") from err
 
-    def _fetch_data(self) -> dict:
+    def _fetch_data(self) -> tuple[dict, dict | None]:
         now = datetime.now(UTC)
         self._last_refresh_attempt_at = now.isoformat()
         try:
@@ -144,7 +147,7 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                     self._entry_id,
                     err,
                 )
-                return self._with_diagnostics(self._last_successful_data, stale=True, error=str(err))
+                return self._with_diagnostics(self._last_successful_data, stale=True, error=str(err)), None
             raise
 
         data["currentPeriod"] = {"year": now.year, "month": now.month}
@@ -154,5 +157,4 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         self._consecutive_failures = 0
         self._set_update_interval(0)
         self._last_successful_data = deepcopy(data)
-        self.hass.async_create_task(self._persist_cache(self._last_successful_data))
-        return self._with_diagnostics(data, stale=False, error=None)
+        return self._with_diagnostics(data, stale=False, error=None), deepcopy(self._last_successful_data)
