@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import json
 import urllib.parse
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -131,6 +132,7 @@ class MoveMoveClient:
             response.raise_for_status()
         except requests.HTTPError as err:
             body = response.text[:500].replace("\n", " ")
+            message = self._response_exception_message(response)
             _LOGGER.error(
                 "MoveMove HTTP error: %s %s -> %s, body=%s",
                 method.upper(),
@@ -138,7 +140,17 @@ class MoveMoveClient:
                 response.status_code,
                 body,
             )
-            raise MoveMoveError(f"HTTP {response.status_code} for {url}") from err
+            raise MoveMoveError(message or f"HTTP {response.status_code} for {url}") from err
+
+    def _response_exception_message(self, response: requests.Response) -> str | None:
+        try:
+            payload = response.json()
+        except (ValueError, json.JSONDecodeError):
+            return None
+        exception = payload.get("exception")
+        if isinstance(exception, dict):
+            return exception.get("message") or str(exception)
+        return None
 
     def _parse_json_response(self, response: requests.Response, url: str) -> dict[str, Any]:
         try:
@@ -234,6 +246,31 @@ class MoveMoveClient:
     def _refresh_csrf_from_cookies(self, *, log_missing: bool = True) -> None:
         self._last_csrf_token = self._csrf_token(log_missing=log_missing)
 
+    def _build_login_payload(self) -> dict[str, Any]:
+        versions = self._ensure_versions()
+        return {
+            "versionInfo": {
+                "moduleVersion": versions.module_version,
+                "apiVersion": versions.login_api_version,
+            },
+            "viewName": "Common.Login",
+            "inputParameters": {
+                "Username": self.credentials.username,
+                "Password": self.credentials.password,
+                "KeepMeLoggedIn": self.credentials.keep_me_logged_in,
+            },
+        }
+
+    def _login_request(self) -> requests.Response:
+        headers = self._base_headers(LOGIN_PAGE_URL)
+        return self._request(
+            "POST",
+            LOGIN_ACTION_URL,
+            raise_for_status=False,
+            headers=headers,
+            json=self._build_login_payload(),
+        )
+
     def _reset_auth_state(self, *, rediscover_versions: bool = False, preserve_token: bool = True) -> None:
         previous_token = self._last_csrf_token
         self.session.cookies.clear()
@@ -268,47 +305,17 @@ class MoveMoveClient:
         return data
 
     def login(self) -> dict[str, Any]:
-        versions = self._ensure_versions()
+        self._ensure_versions()
         if not self._last_csrf_token:
             self._prime_login_page()
 
-        payload = {
-            "versionInfo": {
-                "moduleVersion": versions.module_version,
-                "apiVersion": versions.login_api_version,
-            },
-            "viewName": "Common.Login",
-            "inputParameters": {
-                "Username": self.credentials.username,
-                "Password": self.credentials.password,
-                "KeepMeLoggedIn": self.credentials.keep_me_logged_in,
-            },
-        }
-
-        headers = self._base_headers(LOGIN_PAGE_URL)
-        token = self._last_csrf_token
-        if token:
-            headers["x-csrftoken"] = token
-        response = self._request(
-            "POST",
-            LOGIN_ACTION_URL,
-            raise_for_status=False,
-            headers=headers,
-            json=payload,
-        )
+        response = self._login_request()
 
         if response.status_code == 403:
             _LOGGER.info("MoveMove login returned 403, refreshing CSRF token and retrying")
-            self._reset_auth_state(rediscover_versions=True)
+            self._reset_auth_state(rediscover_versions=True, preserve_token=False)
             self._prime_login_page()
-            retry_headers = self._base_headers(LOGIN_PAGE_URL)
-            response = self._request(
-                "POST",
-                LOGIN_ACTION_URL,
-                raise_for_status=False,
-                headers=retry_headers,
-                json=payload,
-            )
+            response = self._login_request()
 
         self._raise_for_status(response, "POST", LOGIN_ACTION_URL)
         data = self._parse_json_response(response, LOGIN_ACTION_URL)

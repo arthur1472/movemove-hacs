@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.7
+- fixed login retry to rebuild versioned login payloads after auth resets, preventing false 403 "Invalid Login" failures
+
 ## 0.1.6
 - fixed a 403 re-auth regression where CSRF state could be lost during retry, causing repeated authentication failures
 
