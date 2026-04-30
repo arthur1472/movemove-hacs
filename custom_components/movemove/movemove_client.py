@@ -407,8 +407,18 @@ class MoveMoveClient:
         return result.get("data", {})
 
     def fetch_month_data(self, year: int, month: int, max_records: int = DEFAULT_MAX_RECORDS) -> dict[str, Any]:
-        transactions = enrich_transactions(self.fetch_transactions(year, month, max_records=max_records))
-        totals = self.fetch_totals(year, month)
+        try:
+            transactions = enrich_transactions(self.fetch_transactions(year, month, max_records=max_records))
+            totals = self.fetch_totals(year, month)
+        except MoveMoveError as err:
+            _LOGGER.warning(
+                "MoveMove fetch failed, renewing session and retrying once: %s",
+                err,
+            )
+            self._renew_session()
+            self.login()
+            transactions = enrich_transactions(self.fetch_transactions(year, month, max_records=max_records))
+            totals = self.fetch_totals(year, month)
         return {
             "generatedAt": datetime.now(timezone.utc).isoformat(),
             "source": {
