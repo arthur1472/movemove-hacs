@@ -4,7 +4,7 @@ import logging
 import json
 import urllib.parse
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import requests
@@ -20,6 +20,9 @@ TOTALS_ACTION_URL = f"{BASE_URL}/screenservices/OtmTrx_Transactions/OverviewDeta
 MODULEINFO_URL = f"{BASE_URL}/moduleservices/moduleinfo"
 DEFAULT_TIMEOUT = 30
 DEFAULT_MAX_RECORDS = 100
+CAR_WASH_INTERVAL_DAYS = 30
+CAR_WASH_TYPE_IDS = {"WASH", "CARWASH", "CAR_WASH"}
+CAR_WASH_KEYWORDS = ("wash", "wassen", "wasbeurt", "carwash", "car wash")
 HEADLESS_CHROME_UA = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) HeadlessChrome/147.0.7727.15 Safari/537.36"
@@ -82,6 +85,39 @@ def to_number(value: Any) -> float | None:
 
 def parse_iso(dt: str) -> datetime:
     return datetime.fromisoformat(dt.replace("Z", "+00:00"))
+
+
+def transaction_date(tx: dict[str, Any]) -> date | None:
+    tx_date = tx.get("date")
+    if not tx_date:
+        return None
+    return parse_iso(tx_date).date()
+
+
+def is_car_wash_transaction(tx: dict[str, Any]) -> bool:
+    type_id = str(tx.get("typeId") or "").upper()
+    if type_id in CAR_WASH_TYPE_IDS:
+        return True
+
+    searchable = " ".join(
+        str(value or "")
+        for value in (
+            tx.get("type"),
+            tx.get("product"),
+            tx.get("location"),
+            tx.get("note"),
+        )
+    ).casefold()
+    return any(keyword in searchable for keyword in CAR_WASH_KEYWORDS)
+
+
+def next_car_wash_available_date(tx: dict[str, Any] | None) -> str | None:
+    if tx is None:
+        return None
+    last_wash_date = transaction_date(tx)
+    if last_wash_date is None:
+        return None
+    return (last_wash_date + timedelta(days=CAR_WASH_INTERVAL_DAYS)).isoformat()
 
 
 def month_window(year: int, month: int) -> MonthWindow:
@@ -409,6 +445,7 @@ class MoveMoveClient:
     def fetch_month_data(self, year: int, month: int, max_records: int = DEFAULT_MAX_RECORDS) -> dict[str, Any]:
         transactions = enrich_transactions(self.fetch_transactions(year, month, max_records=max_records))
         totals = self.fetch_totals(year, month)
+        latest_wash = next((tx for tx in transactions if is_car_wash_transaction(tx)), None)
         return {
             "generatedAt": datetime.now(timezone.utc).isoformat(),
             "source": {
@@ -417,6 +454,8 @@ class MoveMoveClient:
             },
             "summary": build_summary(year, month, transactions, totals),
             "transactions": transactions,
+            "latestWashTransaction": latest_wash,
+            "nextCarWashAvailableDate": next_car_wash_available_date(latest_wash),
         }
 
 
@@ -473,6 +512,7 @@ def enrich_transactions(transactions: list[dict[str, Any]]) -> list[dict[str, An
 
 def build_summary(year: int, month: int, transactions: list[dict[str, Any]], totals: dict[str, Any]) -> dict[str, Any]:
     fuel_transactions = [tx for tx in transactions if tx["typeId"] == "FUEL"]
+    wash_transactions = [tx for tx in transactions if is_car_wash_transaction(tx)]
     liters_per_100_values = [tx["litersPer100Km"] for tx in fuel_transactions if tx["litersPer100Km"] is not None]
 
     return {
@@ -480,6 +520,7 @@ def build_summary(year: int, month: int, transactions: list[dict[str, Any]], tot
         "month": month,
         "transactionCount": len(transactions),
         "fuelTransactionCount": len(fuel_transactions),
+        "carWashTransactionCount": len(wash_transactions),
         "totalAmountEur": round_value(sum(tx["amountEur"] or 0 for tx in transactions), 2),
         "fuelAmountEur": round_value(sum(tx["amountEur"] or 0 for tx in fuel_transactions), 2),
         "fuelLiters": round_value(sum(tx["liters"] or 0 for tx in fuel_transactions), 2),

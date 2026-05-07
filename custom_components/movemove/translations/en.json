@@ -72,6 +72,9 @@
       },
       "fuel_transaction_count": {
         "name": "Fuel transaction count"
+      },
+      "next_car_wash_available_date": {
+        "name": "Next car wash available date"
       }
     }
   }
