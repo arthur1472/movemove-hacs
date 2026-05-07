@@ -5,6 +5,7 @@ HACS-ready Home Assistant custom integration for MoveMove / OnTheMove.
 ## Features
 
 - monthly summary sensors that reset to 0 when the current month has no transactions
+- lifetime total sensors based on historical transactions from 2000-01-01 onward
 - latest transaction sensors
 - latest refuel insight sensors
 - next car wash available date sensor based on the latest wash plus 30 days
@@ -30,12 +31,18 @@ HACS-ready Home Assistant custom integration for MoveMove / OnTheMove.
 - monthly average liters per 100 km
 - monthly transaction count
 - monthly fuel transaction count
+- lifetime total amount
+- lifetime fuel amount
+- lifetime fuel liters
+- lifetime average liters per 100 km
+- lifetime transaction count
+- lifetime fuel transaction count
 - last fresh update age
 - next car wash available date
 
 The transaction-count sensor exposes the full current-period transaction list as attributes.
 Latest-transaction sensors expose extra context like date, type, location, and product.
-All sensors expose diagnostics attributes that show whether cached data is currently being served, whether previous-month latest-data fallback is active, and which data period is being shown.
+All sensors expose diagnostics attributes that show whether cached data is currently being served, whether previous-month latest-data fallback is active, which data period is being shown, and whether lifetime totals may be truncated by the configured max-records limit.
 
 ## Setup
 

@@ -119,6 +119,52 @@ SENSORS: tuple[MoveMoveSensorDescription, ...] = (
         icon="mdi:car-speed-limiter",
     ),
     MoveMoveSensorDescription(
+        key="lifetime_total_amount",
+        translation_key="lifetime_total_amount",
+        name="MoveMove lifetime total amount",
+        native_unit_of_measurement=CURRENCY_EURO,
+        value_key="lifetimeTotalAmountEur",
+        icon="mdi:cash-multiple",
+    ),
+    MoveMoveSensorDescription(
+        key="lifetime_fuel_amount",
+        translation_key="lifetime_fuel_amount",
+        name="MoveMove lifetime fuel amount",
+        native_unit_of_measurement=CURRENCY_EURO,
+        value_key="lifetimeFuelAmountEur",
+        icon="mdi:gas-station",
+    ),
+    MoveMoveSensorDescription(
+        key="lifetime_fuel_liters",
+        translation_key="lifetime_fuel_liters",
+        name="MoveMove lifetime fuel liters",
+        native_unit_of_measurement=UnitOfVolume.LITERS,
+        value_key="lifetimeFuelLiters",
+        icon="mdi:fuel",
+    ),
+    MoveMoveSensorDescription(
+        key="lifetime_average_liters_per_100km",
+        translation_key="lifetime_average_liters_per_100km",
+        name="MoveMove lifetime average liters per 100km",
+        native_unit_of_measurement="L/100km",
+        value_key="lifetimeAverageLitersPer100Km",
+        icon="mdi:car-speed-limiter",
+    ),
+    MoveMoveSensorDescription(
+        key="lifetime_transaction_count",
+        translation_key="lifetime_transaction_count",
+        name="MoveMove lifetime transaction count",
+        value_key="lifetimeTransactionCount",
+        icon="mdi:format-list-numbered",
+    ),
+    MoveMoveSensorDescription(
+        key="lifetime_fuel_transaction_count",
+        translation_key="lifetime_fuel_transaction_count",
+        name="MoveMove lifetime fuel transaction count",
+        value_key="lifetimeFuelTransactionCount",
+        icon="mdi:counter",
+    ),
+    MoveMoveSensorDescription(
         key="transaction_count",
         translation_key="transaction_count",
         name="MoveMove monthly transaction count",
@@ -187,6 +233,17 @@ class MoveMoveSensor(CoordinatorEntity[MoveMoveDataUpdateCoordinator], SensorEnt
             if next_wash_date is None:
                 return None
             return date.fromisoformat(next_wash_date)
+        if self.entity_description.key.startswith("lifetime_"):
+            lifetime_summary = self.coordinator.data.get("lifetime", {}).get("summary", {})
+            lifetime_keys = {
+                "lifetime_total_amount": "totalAmountEur",
+                "lifetime_fuel_amount": "fuelAmountEur",
+                "lifetime_fuel_liters": "fuelLiters",
+                "lifetime_average_liters_per_100km": "averageLitersPer100Km",
+                "lifetime_transaction_count": "transactionCount",
+                "lifetime_fuel_transaction_count": "fuelTransactionCount",
+            }
+            return lifetime_summary.get(lifetime_keys[self.entity_description.key])
         return self.coordinator.data.get("summary", {}).get(self.entity_description.value_key)
 
     @property
@@ -198,6 +255,7 @@ class MoveMoveSensor(CoordinatorEntity[MoveMoveDataUpdateCoordinator], SensorEnt
             ATTR_LATEST_TRANSACTION: self.coordinator.data.get("latestTransaction"),
             "latest_fuel_transaction": self.coordinator.data.get("latestFuelTransaction"),
             "latest_wash_transaction": self.coordinator.data.get("latestWashTransaction"),
+            "lifetime": self.coordinator.data.get("lifetime", {}),
             ATTR_DIAGNOSTICS: self.coordinator.data.get("diagnostics", {}),
         }
         latest = self.coordinator.data.get("latestTransaction") or {}

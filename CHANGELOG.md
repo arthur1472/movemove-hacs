@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.14
+- added lifetime total sensors for total amount, fuel amount, fuel liters, average fuel usage, and transaction counts
+- fetch lifetime totals with a single historical transaction query from 2000-01-01 onward
+
 ## 0.1.13
 - keep monthly summary sensors tied to the current month so they reset to 0 when the current month has no transactions
 - keep previous-month fallback only for latest transaction/refuel/wash sensors

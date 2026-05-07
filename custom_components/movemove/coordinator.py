@@ -188,6 +188,7 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         self._last_refresh_attempt_at = now.isoformat()
         try:
             data = self._client.fetch_month_data(now.year, now.month, max_records=self._max_records)
+            data["lifetime"] = self._client.fetch_lifetime_data(max_records=self._max_records)
             current_month_has_transactions = bool(data.get("transactions"))
             fallback_period: dict | None = None
             latest_fallback: dict | None = None
