@@ -190,11 +190,11 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             data = self._client.fetch_month_data(now.year, now.month, max_records=self._max_records)
             current_month_has_transactions = bool(data.get("transactions"))
             fallback_period: dict | None = None
+            latest_fallback: dict | None = None
             if not current_month_has_transactions:
-                fallback = self._fetch_recent_non_empty_month_data(now.year, now.month)
-                if fallback is not None:
-                    fallback_period = fallback.get("dataPeriod")
-                    data = fallback
+                latest_fallback = self._fetch_recent_non_empty_month_data(now.year, now.month)
+                if latest_fallback is not None:
+                    fallback_period = latest_fallback.get("dataPeriod")
         except MoveMoveError as err:
             self._consecutive_failures += 1
             self._last_refresh_error = str(err)
@@ -209,7 +209,14 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             raise
 
         data["currentPeriod"] = {"year": now.year, "month": now.month}
+        data["dataPeriod"] = {"year": now.year, "month": now.month}
         data = self._prepare_payload(data)
+        if latest_fallback is not None:
+            latest_fallback = self._prepare_payload(latest_fallback)
+            data["latestTransaction"] = latest_fallback.get("latestTransaction")
+            data["latestFuelTransaction"] = latest_fallback.get("latestFuelTransaction")
+            data["latestWashTransaction"] = latest_fallback.get("latestWashTransaction")
+            data["nextCarWashAvailableDate"] = latest_fallback.get("nextCarWashAvailableDate")
         wash_fallback_period: dict | None = None
         if data.get("latestWashTransaction") is None:
             data_period = data.get("dataPeriod") or {"year": now.year, "month": now.month}
@@ -225,7 +232,8 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             diagnostics.update(
                 {
                     "currentMonthHasTransactions": False,
-                    "usingPreviousMonthData": True,
+                    "usingPreviousMonthData": False,
+                    "usingPreviousMonthLatestData": True,
                     "fallbackPeriod": fallback_period,
                     "washFallbackPeriod": wash_fallback_period,
                 }
@@ -237,6 +245,7 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                 {
                     "currentMonthHasTransactions": current_month_has_transactions,
                     "usingPreviousMonthData": False,
+                    "usingPreviousMonthLatestData": False,
                     "fallbackPeriod": None,
                     "washFallbackPeriod": wash_fallback_period,
                 }
