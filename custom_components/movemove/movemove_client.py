@@ -52,12 +52,16 @@ class ApiVersions:
 
 
 @dataclass(frozen=True)
-class MonthWindow:
-    year: int
-    month: int
+class TransactionWindow:
     start_iso: str
     end_iso: str
     legacy_input_parameter_string: str
+
+
+@dataclass(frozen=True)
+class MonthWindow(TransactionWindow):
+    year: int
+    month: int
 
 
 @dataclass(frozen=True)
@@ -120,6 +124,17 @@ def next_car_wash_available_date(tx: dict[str, Any] | None) -> str | None:
     return (last_wash_date + timedelta(days=CAR_WASH_INTERVAL_DAYS)).isoformat()
 
 
+def transaction_window(start_dt: datetime, end_dt: datetime) -> TransactionWindow:
+    return TransactionWindow(
+        start_iso=start_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        end_iso=end_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        legacy_input_parameter_string=(
+            f"{start_dt.strftime('%Y-%m-%d %H:%M:%S')}"
+            f"{end_dt.strftime('%Y-%m-%d %H:%M:%S')}0"
+        ),
+    )
+
+
 def month_window(year: int, month: int) -> MonthWindow:
     start_dt = datetime(year, month, 1, tzinfo=timezone.utc)
     if month == 12:
@@ -127,16 +142,20 @@ def month_window(year: int, month: int) -> MonthWindow:
     else:
         next_month = datetime(year, month + 1, 1, tzinfo=timezone.utc)
     end_dt = next_month - timedelta(seconds=1)
+    window = transaction_window(start_dt, end_dt)
     return MonthWindow(
         year=year,
         month=month,
-        start_iso=start_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-        end_iso=end_dt.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-        legacy_input_parameter_string=(
-            f"{start_dt.strftime('%Y-%m-%d 00:00:00')}"
-            f"{end_dt.strftime('%Y-%m-%d 23:59:59')}0"
-        ),
+        start_iso=window.start_iso,
+        end_iso=window.end_iso,
+        legacy_input_parameter_string=window.legacy_input_parameter_string,
     )
+
+
+def lifetime_window(end_dt: datetime | None = None) -> TransactionWindow:
+    start_dt = datetime(2000, 1, 1, tzinfo=timezone.utc)
+    end_dt = end_dt or datetime.now(timezone.utc)
+    return transaction_window(start_dt, end_dt)
 
 
 class MoveMoveClient:
@@ -374,9 +393,12 @@ class MoveMoveClient:
         }
         self._post_json(DEVICE_LOGIN_ACTION_URL, payload, LOGIN_PAGE_URL)
 
-    def fetch_transactions(self, year: int, month: int, max_records: int = DEFAULT_MAX_RECORDS) -> list[dict[str, Any]]:
+    def fetch_transactions_for_window(
+        self,
+        window: TransactionWindow,
+        max_records: int = DEFAULT_MAX_RECORDS,
+    ) -> list[dict[str, Any]]:
         versions = self._ensure_versions()
-        window = month_window(year, month)
         payload = {
             "versionInfo": {
                 "moduleVersion": versions.module_version,
@@ -415,6 +437,18 @@ class MoveMoveClient:
         }
         result = self._post_json(TRANSACTIONS_ACTION_URL, payload, f"{BASE_URL}/Transactions")
         return result.get("data", {}).get("Transactions", {}).get("List", [])
+
+    def fetch_transactions(self, year: int, month: int, max_records: int = DEFAULT_MAX_RECORDS) -> list[dict[str, Any]]:
+        return self.fetch_transactions_for_window(month_window(year, month), max_records=max_records)
+
+    def fetch_lifetime_data(self, max_records: int = DEFAULT_MAX_RECORDS) -> dict[str, Any]:
+        transactions = enrich_transactions(self.fetch_transactions_for_window(lifetime_window(), max_records=max_records))
+        return {
+            "summary": build_summary(None, None, transactions, {}),
+            "transactionsLoaded": len(transactions),
+            "maxRecords": max_records,
+            "mayBeTruncated": len(transactions) >= max_records,
+        }
 
     def fetch_totals(self, year: int, month: int, transaction_type: str = "All") -> dict[str, Any]:
         versions = self._ensure_versions()
@@ -510,7 +544,7 @@ def enrich_transactions(transactions: list[dict[str, Any]]) -> list[dict[str, An
     return prepared
 
 
-def build_summary(year: int, month: int, transactions: list[dict[str, Any]], totals: dict[str, Any]) -> dict[str, Any]:
+def build_summary(year: int | None, month: int | None, transactions: list[dict[str, Any]], totals: dict[str, Any]) -> dict[str, Any]:
     fuel_transactions = [tx for tx in transactions if tx["typeId"] == "FUEL"]
     wash_transactions = [tx for tx in transactions if is_car_wash_transaction(tx)]
     liters_per_100_values = [tx["litersPer100Km"] for tx in fuel_transactions if tx["litersPer100Km"] is not None]

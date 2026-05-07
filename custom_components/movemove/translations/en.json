@@ -75,6 +75,24 @@
       },
       "next_car_wash_available_date": {
         "name": "Next car wash available date"
+      },
+      "lifetime_total_amount": {
+        "name": "Lifetime total amount"
+      },
+      "lifetime_fuel_amount": {
+        "name": "Lifetime fuel amount"
+      },
+      "lifetime_fuel_liters": {
+        "name": "Lifetime fuel liters"
+      },
+      "lifetime_average_liters_per_100km": {
+        "name": "Lifetime average liters per 100km"
+      },
+      "lifetime_transaction_count": {
+        "name": "Lifetime transaction count"
+      },
+      "lifetime_fuel_transaction_count": {
+        "name": "Lifetime fuel transaction count"
       }
     }
   }
