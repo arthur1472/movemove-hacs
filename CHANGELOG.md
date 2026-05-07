@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.11
+- keep showing the most recent non-empty month when the current month has no transactions yet
+- expose both the requested current period and the data period used in sensor attributes
+
 ## 0.1.10
 - fixed Home Assistant thread-safety violations by persisting cache from the event loop instead of an executor thread
 - hardened expired-session recovery by renewing the HTTP session before re-authenticating after a 403 on data requests
