@@ -56,22 +56,22 @@
         "name": "Latest transaction liters"
       },
       "total_amount": {
-        "name": "Total amount"
+        "name": "Monthly total amount"
       },
       "fuel_amount": {
-        "name": "Fuel amount"
+        "name": "Monthly fuel amount"
       },
       "fuel_liters": {
-        "name": "Fuel liters"
+        "name": "Monthly fuel liters"
       },
       "average_liters_per_100km": {
-        "name": "Average liters per 100km"
+        "name": "Monthly average liters per 100km"
       },
       "transaction_count": {
-        "name": "Transaction count"
+        "name": "Monthly transaction count"
       },
       "fuel_transaction_count": {
-        "name": "Fuel transaction count"
+        "name": "Monthly fuel transaction count"
       },
       "next_car_wash_available_date": {
         "name": "Next car wash available date"

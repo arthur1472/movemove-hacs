@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.13
+- keep monthly summary sensors tied to the current month so they reset to 0 when the current month has no transactions
+- keep previous-month fallback only for latest transaction/refuel/wash sensors
+- rename monthly summary sensor labels to make their monthly scope explicit
+
 ## 0.1.12
 - added a next car wash available date sensor based on the latest wash transaction plus 30 days
 - search recent previous months for the latest wash transaction when it is not present in the current data period

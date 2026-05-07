@@ -89,7 +89,7 @@ SENSORS: tuple[MoveMoveSensorDescription, ...] = (
     MoveMoveSensorDescription(
         key="total_amount",
         translation_key="total_amount",
-        name="MoveMove total amount",
+        name="MoveMove monthly total amount",
         native_unit_of_measurement=CURRENCY_EURO,
         value_key="totalAmountEur",
         icon="mdi:currency-eur",
@@ -97,7 +97,7 @@ SENSORS: tuple[MoveMoveSensorDescription, ...] = (
     MoveMoveSensorDescription(
         key="fuel_amount",
         translation_key="fuel_amount",
-        name="MoveMove fuel amount",
+        name="MoveMove monthly fuel amount",
         native_unit_of_measurement=CURRENCY_EURO,
         value_key="fuelAmountEur",
         icon="mdi:gas-station",
@@ -105,7 +105,7 @@ SENSORS: tuple[MoveMoveSensorDescription, ...] = (
     MoveMoveSensorDescription(
         key="fuel_liters",
         translation_key="fuel_liters",
-        name="MoveMove fuel liters",
+        name="MoveMove monthly fuel liters",
         native_unit_of_measurement=UnitOfVolume.LITERS,
         value_key="fuelLiters",
         icon="mdi:fuel",
@@ -113,7 +113,7 @@ SENSORS: tuple[MoveMoveSensorDescription, ...] = (
     MoveMoveSensorDescription(
         key="average_liters_per_100km",
         translation_key="average_liters_per_100km",
-        name="MoveMove average liters per 100km",
+        name="MoveMove monthly average liters per 100km",
         native_unit_of_measurement="L/100km",
         value_key="averageLitersPer100Km",
         icon="mdi:car-speed-limiter",
@@ -121,14 +121,14 @@ SENSORS: tuple[MoveMoveSensorDescription, ...] = (
     MoveMoveSensorDescription(
         key="transaction_count",
         translation_key="transaction_count",
-        name="MoveMove transaction count",
+        name="MoveMove monthly transaction count",
         value_key="transactionCount",
         icon="mdi:format-list-numbered",
     ),
     MoveMoveSensorDescription(
         key="fuel_transaction_count",
         translation_key="fuel_transaction_count",
-        name="MoveMove fuel transaction count",
+        name="MoveMove monthly fuel transaction count",
         value_key="fuelTransactionCount",
         icon="mdi:counter",
     ),
