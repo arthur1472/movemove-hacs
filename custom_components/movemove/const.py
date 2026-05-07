@@ -16,5 +16,6 @@ MIN_SCAN_INTERVAL_MINUTES = 15
 ATTR_TRANSACTIONS = "transactions"
 ATTR_SUMMARY = "summary"
 ATTR_CURRENT_PERIOD = "current_period"
+ATTR_DATA_PERIOD = "data_period"
 ATTR_LATEST_TRANSACTION = "latest_transaction"
 ATTR_DIAGNOSTICS = "diagnostics"

@@ -17,6 +17,7 @@ CACHE_VERSION = 1
 MAX_BACKOFF_MULTIPLIER = 8
 JITTER_MIN = 0.9
 JITTER_MAX = 1.1
+MAX_FALLBACK_MONTHS = 12
 
 
 class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
@@ -78,7 +79,30 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             (tx for tx in payload.get("transactions", []) if tx.get("typeId") == "FUEL"),
             None,
         )
+        payload.setdefault(
+            "dataPeriod",
+            {
+                "year": payload.get("summary", {}).get("year"),
+                "month": payload.get("summary", {}).get("month"),
+            },
+        )
         return payload
+
+    @staticmethod
+    def _previous_month(year: int, month: int) -> tuple[int, int]:
+        if month == 1:
+            return year - 1, 12
+        return year, month - 1
+
+    def _fetch_recent_non_empty_month_data(self, year: int, month: int) -> dict | None:
+        search_year, search_month = self._previous_month(year, month)
+        for _ in range(MAX_FALLBACK_MONTHS):
+            fallback = self._client.fetch_month_data(search_year, search_month, max_records=self._max_records)
+            if fallback.get("transactions"):
+                fallback["dataPeriod"] = {"year": search_year, "month": search_month}
+                return fallback
+            search_year, search_month = self._previous_month(search_year, search_month)
+        return None
 
     def _with_diagnostics(self, data: dict, *, stale: bool, error: str | None) -> dict:
         payload = deepcopy(data)
@@ -137,6 +161,13 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         self._last_refresh_attempt_at = now.isoformat()
         try:
             data = self._client.fetch_month_data(now.year, now.month, max_records=self._max_records)
+            current_month_has_transactions = bool(data.get("transactions"))
+            fallback_period: dict | None = None
+            if not current_month_has_transactions:
+                fallback = self._fetch_recent_non_empty_month_data(now.year, now.month)
+                if fallback is not None:
+                    fallback_period = fallback.get("dataPeriod")
+                    data = fallback
         except MoveMoveError as err:
             self._consecutive_failures += 1
             self._last_refresh_error = str(err)
@@ -152,6 +183,26 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
 
         data["currentPeriod"] = {"year": now.year, "month": now.month}
         data = self._prepare_payload(data)
+        if fallback_period is not None:
+            diagnostics = dict(data.get("diagnostics") or {})
+            diagnostics.update(
+                {
+                    "currentMonthHasTransactions": False,
+                    "usingPreviousMonthData": True,
+                    "fallbackPeriod": fallback_period,
+                }
+            )
+            data["diagnostics"] = diagnostics
+        else:
+            diagnostics = dict(data.get("diagnostics") or {})
+            diagnostics.update(
+                {
+                    "currentMonthHasTransactions": current_month_has_transactions,
+                    "usingPreviousMonthData": False,
+                    "fallbackPeriod": None,
+                }
+            )
+            data["diagnostics"] = diagnostics
         self._last_success_at = now.isoformat()
         self._last_refresh_error = None
         self._consecutive_failures = 0

@@ -9,6 +9,7 @@ HACS-ready Home Assistant custom integration for MoveMove / OnTheMove.
 - latest refuel insight sensors
 - automatic OutSystems JSON API polling
 - stale-data fallback with persistent cache when MoveMove is slow or offline
+- previous-month fallback when the current month has no transactions yet
 - diagnostics support with redaction
 - manual `movemove.refresh` service
 - diagnostic "Refresh data" button on the device
@@ -32,7 +33,7 @@ HACS-ready Home Assistant custom integration for MoveMove / OnTheMove.
 
 The transaction-count sensor exposes the full current-period transaction list as attributes.
 Latest-transaction sensors expose extra context like date, type, location, and product.
-All sensors expose diagnostics attributes that show whether cached data is currently being served.
+All sensors expose diagnostics attributes that show whether cached data is currently being served, whether previous-month fallback is active, and which data period is being shown.
 
 ## Setup
 

@@ -11,7 +11,15 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import ATTR_CURRENT_PERIOD, ATTR_DIAGNOSTICS, ATTR_LATEST_TRANSACTION, ATTR_SUMMARY, ATTR_TRANSACTIONS, DOMAIN
+from .const import (
+    ATTR_CURRENT_PERIOD,
+    ATTR_DATA_PERIOD,
+    ATTR_DIAGNOSTICS,
+    ATTR_LATEST_TRANSACTION,
+    ATTR_SUMMARY,
+    ATTR_TRANSACTIONS,
+    DOMAIN,
+)
 from .coordinator import MoveMoveDataUpdateCoordinator
 
 
@@ -172,6 +180,7 @@ class MoveMoveSensor(CoordinatorEntity[MoveMoveDataUpdateCoordinator], SensorEnt
         attrs = {
             ATTR_SUMMARY: self.coordinator.data.get("summary", {}),
             ATTR_CURRENT_PERIOD: self.coordinator.data.get("currentPeriod", {}),
+            ATTR_DATA_PERIOD: self.coordinator.data.get("dataPeriod", {}),
             ATTR_LATEST_TRANSACTION: self.coordinator.data.get("latestTransaction"),
             "latest_fuel_transaction": self.coordinator.data.get("latestFuelTransaction"),
             ATTR_DIAGNOSTICS: self.coordinator.data.get("diagnostics", {}),
