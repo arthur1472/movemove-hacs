@@ -10,7 +10,14 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DEFAULT_SCAN_INTERVAL_MINUTES, DOMAIN
-from .movemove_client import MoveMoveClient, MoveMoveCredentials, MoveMoveError
+from .movemove_client import (
+    MoveMoveClient,
+    MoveMoveCredentials,
+    MoveMoveError,
+    enrich_transactions,
+    is_car_wash_transaction,
+    next_car_wash_available_date,
+)
 
 _LOGGER = logging.getLogger(__name__)
 CACHE_VERSION = 1
@@ -79,6 +86,14 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
             (tx for tx in payload.get("transactions", []) if tx.get("typeId") == "FUEL"),
             None,
         )
+        latest_wash = payload.get("latestWashTransaction") or next(
+            (tx for tx in payload.get("transactions", []) if is_car_wash_transaction(tx)),
+            None,
+        )
+        payload["latestWashTransaction"] = latest_wash
+        payload["nextCarWashAvailableDate"] = payload.get("nextCarWashAvailableDate") or next_car_wash_available_date(
+            latest_wash
+        )
         payload.setdefault(
             "dataPeriod",
             {
@@ -103,6 +118,18 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                 return fallback
             search_year, search_month = self._previous_month(search_year, search_month)
         return None
+
+    def _fetch_recent_wash_transaction(self, year: int, month: int) -> tuple[dict | None, dict | None]:
+        search_year, search_month = self._previous_month(year, month)
+        for _ in range(MAX_FALLBACK_MONTHS):
+            transactions = enrich_transactions(
+                self._client.fetch_transactions(search_year, search_month, max_records=self._max_records)
+            )
+            latest_wash = next((tx for tx in transactions if is_car_wash_transaction(tx)), None)
+            if latest_wash is not None:
+                return latest_wash, {"year": search_year, "month": search_month}
+            search_year, search_month = self._previous_month(search_year, search_month)
+        return None, None
 
     def _with_diagnostics(self, data: dict, *, stale: bool, error: str | None) -> dict:
         payload = deepcopy(data)
@@ -183,6 +210,16 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
 
         data["currentPeriod"] = {"year": now.year, "month": now.month}
         data = self._prepare_payload(data)
+        wash_fallback_period: dict | None = None
+        if data.get("latestWashTransaction") is None:
+            data_period = data.get("dataPeriod") or {"year": now.year, "month": now.month}
+            latest_wash, wash_fallback_period = self._fetch_recent_wash_transaction(
+                data_period["year"],
+                data_period["month"],
+            )
+            if latest_wash is not None:
+                data["latestWashTransaction"] = latest_wash
+                data["nextCarWashAvailableDate"] = next_car_wash_available_date(latest_wash)
         if fallback_period is not None:
             diagnostics = dict(data.get("diagnostics") or {})
             diagnostics.update(
@@ -190,6 +227,7 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                     "currentMonthHasTransactions": False,
                     "usingPreviousMonthData": True,
                     "fallbackPeriod": fallback_period,
+                    "washFallbackPeriod": wash_fallback_period,
                 }
             )
             data["diagnostics"] = diagnostics
@@ -200,6 +238,7 @@ class MoveMoveDataUpdateCoordinator(DataUpdateCoordinator[dict]):
                     "currentMonthHasTransactions": current_month_has_transactions,
                     "usingPreviousMonthData": False,
                     "fallbackPeriod": None,
+                    "washFallbackPeriod": wash_fallback_period,
                 }
             )
             data["diagnostics"] = diagnostics

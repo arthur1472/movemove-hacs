@@ -7,6 +7,7 @@ HACS-ready Home Assistant custom integration for MoveMove / OnTheMove.
 - monthly summary sensors
 - latest transaction sensors
 - latest refuel insight sensors
+- next car wash available date sensor based on the latest wash plus 30 days
 - automatic OutSystems JSON API polling
 - stale-data fallback with persistent cache when MoveMove is slow or offline
 - previous-month fallback when the current month has no transactions yet
@@ -30,6 +31,7 @@ HACS-ready Home Assistant custom integration for MoveMove / OnTheMove.
 - transaction count
 - fuel transaction count
 - last fresh update age
+- next car wash available date
 
 The transaction-count sensor exposes the full current-period transaction list as attributes.
 Latest-transaction sensors expose extra context like date, type, location, and product.

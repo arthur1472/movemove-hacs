@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CURRENCY_EURO, EntityCategory, UnitOfVolume
 from homeassistant.core import HomeAssistant
@@ -60,6 +61,14 @@ SENSORS: tuple[MoveMoveSensorDescription, ...] = (
         value_key="last_fresh_update_age_minutes",
         icon="mdi:timer-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MoveMoveSensorDescription(
+        key="next_car_wash_available_date",
+        translation_key="next_car_wash_available_date",
+        name="MoveMove next car wash available date",
+        value_key="next_car_wash_available_date",
+        icon="mdi:car-wash",
+        device_class=SensorDeviceClass.DATE,
     ),
     MoveMoveSensorDescription(
         key="latest_transaction_amount",
@@ -173,6 +182,11 @@ class MoveMoveSensor(CoordinatorEntity[MoveMoveDataUpdateCoordinator], SensorEnt
             return latest_fuel.get("litersPer100Km")
         if self.entity_description.value_key == "last_fresh_update_age_minutes":
             return self.coordinator.data.get("diagnostics", {}).get("lastSuccessfulUpdateAgeMinutes")
+        if self.entity_description.value_key == "next_car_wash_available_date":
+            next_wash_date = self.coordinator.data.get("nextCarWashAvailableDate")
+            if next_wash_date is None:
+                return None
+            return date.fromisoformat(next_wash_date)
         return self.coordinator.data.get("summary", {}).get(self.entity_description.value_key)
 
     @property
@@ -183,6 +197,7 @@ class MoveMoveSensor(CoordinatorEntity[MoveMoveDataUpdateCoordinator], SensorEnt
             ATTR_DATA_PERIOD: self.coordinator.data.get("dataPeriod", {}),
             ATTR_LATEST_TRANSACTION: self.coordinator.data.get("latestTransaction"),
             "latest_fuel_transaction": self.coordinator.data.get("latestFuelTransaction"),
+            "latest_wash_transaction": self.coordinator.data.get("latestWashTransaction"),
             ATTR_DIAGNOSTICS: self.coordinator.data.get("diagnostics", {}),
         }
         latest = self.coordinator.data.get("latestTransaction") or {}

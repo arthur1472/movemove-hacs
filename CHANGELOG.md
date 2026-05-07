@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.12
+- added a next car wash available date sensor based on the latest wash transaction plus 30 days
+- search recent previous months for the latest wash transaction when it is not present in the current data period
+
 ## 0.1.11
 - keep showing the most recent non-empty month when the current month has no transactions yet
 - expose both the requested current period and the data period used in sensor attributes
